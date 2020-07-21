@@ -125,7 +125,8 @@ def trade_handler(s,tick):
     if crzy_m_bid > crzy_a_ask:
         crzy_m_vol = agg_volume(crzy_m_book, crzy_m_bid, 'bids')
         crzy_a_vol = agg_volume(crzy_a_book, crzy_a_ask, 'asks')
-        volume = min(crzy_m_vol, crzy_a_vol)
+        # volume = min(crzy_m_vol, crzy_a_vol)
+        volume = min(crzy_m_book['bids'][0]['quantity'], crzy_a_book['asks'][0]['quantity'])
         if volume > 10000:
             volume = 10000
         else:
@@ -139,7 +140,8 @@ def trade_handler(s,tick):
     if crzy_a_bid > crzy_m_ask:
         crzy_a_vol = agg_volume(crzy_a_book, crzy_a_bid, 'bids')
         crzy_m_vol = agg_volume(crzy_m_book, crzy_m_ask, 'asks')
-        volume = min(crzy_a_vol, crzy_m_vol)
+        # volume = min(crzy_a_vol, crzy_m_vol)
+        volume = min(crzy_a_book['bids'][0]['quantity'], crzy_m_book['asks'][0]['quantity'])
         if volume > 10000:
             volume = 10000
         else:
@@ -214,7 +216,8 @@ def test_main():
                         'STDEV Price': data['crzy_a_bid_price'].std()
                         }
                     print(temp)
-                    agg.append(temp, ignore_index = True)
+                    agg = agg.append(temp, ignore_index = True)
+                    print(agg)
                     #reinitizilze array
                     data.drop(data.index, inplace=True)
                     data.pop("Profit")
@@ -230,15 +233,15 @@ def test_main():
                 'Ending NLV': agg['Ending NLV'].mean(),
                 'STDEV Price': agg['STDEV Price'].mean()
                 }
-        agg.append(temp, ignore_index = True)
+        agg = agg.append(temp, ignore_index = True)
         with pd.ExcelWriter(test_name+'.xlsx', mode='a') as writer:  
             agg.to_excel(writer, sheet_name='Results')
             
 
 #environment variables
 test = True #back_test variable does various functions such as saving outputs and allows program to run in the background
-test_name = 'Greedy better volume strat'
-test_counter = 5
+test_name = 'Greedy worse volume strat'
+test_counter = 10
 data = pd.DataFrame(columns = ['tick','nlv', 'crzy_a_bid_price', 'crzy_a_bid_volume', 'crzy_a_ask_price', 'crzy_a_ask_volume', 'crzy_m_bid_price', 'crzy_m_bid_volume', 'crzy_m_ask_price', 'crzy_m_ask_volume', 'crzy_a_price', 'crzy_a_qty', 'crzy_a_action', 'crzy_m_price', 'crzy_m_qty', 'crzy_m_action']) #initialize dataframe used for storing all the data in a single session
 agg = pd.DataFrame(columns = ['Run', 'Ending NLV', 'STDEV Price'])
 
