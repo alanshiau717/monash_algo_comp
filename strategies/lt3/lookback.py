@@ -4,11 +4,12 @@ import requests
 import datetime
 import api_calls
 
-class simple_algo:
-    def __init__(self, tickers):
+class vwap_lookback:
+    def __init__(self, tickers,lookback):
         self.data = {}
         self.tickers = tickers
         self.limits = {}
+        self.lookback = lookback
         for i in tickers:
             self.data[i] = {
                 'VWAP': 0,
@@ -21,12 +22,12 @@ class simple_algo:
     def tick_handler(self, session, tick):
         securities = api_calls.get_securities(session)
         for ticker in self.tickers:
-            tas_data = api_calls.get_tas(session, ticker)
+            tas_data = api_calls.get_tas_param(session, ticker, self.lookback)
             total_volume = 0
             self.data[ticker]['VWAP'] = 0
             for j in tas_data:
                 self.data[ticker]['VWAP'] += (j['quantity']*j['price'])
-                total_volume += j['quantity']
+                total_volume += j['quantity']  
             if total_volume > 0:
                 self.data[ticker]['VWAP'] = self.data[ticker]['VWAP']/total_volume
             else:
@@ -116,8 +117,6 @@ class simple_algo:
         else:
             print('failed due to limit constaints')
             pass
-
-
 
 
     

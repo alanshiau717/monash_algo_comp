@@ -1,1 +1,4 @@
 *.xlsx
+Results/
+__pycache__/
+*.py[cod]

@@ -8,10 +8,8 @@ import os
 from time import sleep
 import utils.data_retriever as dr
 import datetime
-import strategies.lt3.basic_method as basic_method
-import strategies.lt3.lookback as lookback
-import strategies.lt3.dynamic_trading_method as dynamic
 import api_calls
+import strategies.algo1.market_order as market_order
 
 # this class definition allows us to print error messages and stop the program when needed
 class ApiException(Exception):
@@ -30,8 +28,7 @@ def test_main():
     counter = 0
     time = datetime.datetime.today()
     prev_tick = -1
-    retriever = dr.retriever(time, 'lt3', test_name, db_endpoint)
-    trader = dynamic.trade_handler(tickers)
+    retriever = dr.retriever(time, algorithm, test_name, db_endpoint)
     with requests.Session() as s:
         s.headers.update(API_KEY)
         tick = api_calls.get_tick(s)
@@ -46,18 +43,19 @@ def test_main():
         while counter <= test_counter:
             #checks if the trading platform is running, if it is we do the trades
             if status == "ACTIVE":
+                market_order.trade_handler(s)
                 #this insures we only execute the trade_handler once a tick
                 if prev_tick != tick:
                     prev_tick = tick
                     retriever.gather_data(tick, tickers, s)
-                    trader.tick_handler(s,tick)
+                    market_order.trade_handler(s)
                     # checks if we've finished the test, if we have we will increment the counter by 1
                     print(tick)
                 tick = api_calls.get_tick(s)
                 status = api_calls.get_status(s)
                 if tick == 300:
                     retriever.gather_data(tick, tickers, s)
-                    trader.tick_handler(s,tick)
+                    # market_order.trade_handler(s)
                     counter += 1
                     time = datetime.datetime.today()
                     retriever = dr.retriever(time, 'lt3', test_name, db_endpoint)
@@ -79,15 +77,13 @@ def test_main():
 
 #environment variables
 test = True #back_test variable does various functions such as saving outputs and allows program to run in the background
-test_name = 'dynamic'
+algorithm = 'algo1'
+test_name = 'market_order'
 test_counter = 100
 API_KEY = {'X-API-Key': '33XT2ML9'}
 shutdown = False
 db_endpoint = 'mongodb://127.0.0.1:27017'
-tickers = ["CRZY", "TAME"]
-# client = MongoClient('mongodb://127.0.0.1:27017')
-# db = client.algo_comp
-# serverStatusResult=db.command("serverStatus")
+tickers = ["CRZY_A", "CRZY_M"]
 
 
 

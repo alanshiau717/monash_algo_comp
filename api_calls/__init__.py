@@ -4,6 +4,12 @@ import requests
 class ApiException(Exception):
     pass
 
+def get_securities(session): 
+    resp = session.get('http://localhost:9999/v1/securities')
+    if resp.ok:
+        case = resp.json()
+        return case
+    raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')
 def get_tick(session):
     resp = session.get('http://localhost:9999/v1/case')
     if resp.ok:
@@ -43,6 +49,20 @@ def get_tas(session, ticker):
         return book
     raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')
 
+
+def get_tas_param(session, ticker, limit):
+    payload = {
+        'ticker': ticker,
+        'limit': limit
+    }
+    resp = session.get('http://localhost:9999/v1/securities/tas', params = payload)
+    if resp.ok:
+        book = resp.json()
+        return book
+    raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')
+
+
+
 def get_history(session, ticker):
     payload = {'ticker': ticker}
     resp = session.get('http://localhost:9999/v1/securities/history', params = payload)
@@ -74,10 +94,13 @@ def get_all_orders(session):
     return orders
 
 def accept_tender(session, id):
-    payload = {'id', id}
-    resp = session.post('http://localhost:9999/v1/tenders', params = payload)
+    print(id)
+    resp =session.post('http://localhost:9999/v1/tenders/'+str(id))
     if resp.ok:
+        print('tender success')
         return 200
+    print(resp.json())
+    print('tender off failed')
     raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')
     
 def send_order(session, ticker, volume, o_type, action, price):
@@ -98,5 +121,32 @@ def send_order(session, ticker, volume, o_type, action, price):
         }
     resp = session.post('http://localhost:9999/v1/orders', params= payload)
     if resp.ok:
+        return resp.json()
+    print(resp.json())
+    raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')
+
+def get_limits(session):
+    resp = session.get("http://localhost:9999/v1/limits")
+    if resp.ok:
+        book = resp.json()
+        return book[0]
+    raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')
+
+def cancel_order(session,o_id):
+    resp = session.delete("http://localhost:9999/v1/orders/"+str(o_id))
+    if resp.ok:
         return 200
+    print('Order Not Yet Executed')
+    return None
+    # raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')
+
+def is_filled(session,o_id):
+    resp = session.get("http://localhost:9999/v1/orders/"+str(o_id))
+    if resp.ok:
+        details = resp.json()
+        if details['status']=="OPEN":
+            return False
+        else:
+            return True
+    print(resp.json())
     raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')

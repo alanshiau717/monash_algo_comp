@@ -6,6 +6,7 @@ import requests
 import pandas as pd 
 import os
 from time import sleep
+import utils.data_retriever as dr
 import datetime
 
 # this class definition allows us to print error messages and stop the program when needed
@@ -34,55 +35,12 @@ def get_status(session):
         return case['status']
     raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')
 
-# this returns all revelevant book data for a share
-def get_trading_data(session,ticker):
-    payload = {'ticker': ticker}
-    resp = session.get('http://localhost:9999/v1/securities/book', params=payload)
-    if resp.ok:
-        book = resp.json()
-        return book
-    raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')
-
-#returns data regarding trader id first name, last name and nlv
-def get_trader_data(session):
-    resp = session.get('http://localhost:9999/v1/trader')
-    if resp.ok:
-        res = resp.json()
-        return res
-    raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')
-
-def get_tas(session, ticker):
-    payload = {'ticker': ticker}
-    resp = session.get('http://localhost:9999/v1/securities/tas', params = payload)
-    if resp.ok:
-        book = resp.json()
-        return book
-    raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')
-
-def get_history(session, ticker):
-    payload = {'ticker': ticker}
-    resp = session.get('http://localhost:9999/v1/securities/history', params = payload)
-    if resp.ok:
-        book = resp.json()
-        return book
-    raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')
-
-def get_tenders(session): 
-    resp = session.get('http://localhost:9999/v1/tenders')
-    if resp.ok:
-        book = resp.json()
-        return book
-    raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')
-
-
 #this is the main we are using for testing
-def test_main(db):
-    crzy_data = {"tick_data": []}
-    tame_data = {"tick_data": []}
-    tender_data = {"tick_data": []}
+def test_main():
     counter = 0
     time = datetime.datetime.today()
     prev_tick = -1
+    retriever = dr.retriever(time, 'algo_trader', test_name, db_endpoint)
     with requests.Session() as s:
         s.headers.update(API_KEY)
         tick = get_tick(s)
@@ -93,41 +51,16 @@ def test_main(db):
                 #this insures we only execute the trade_handler once a tick
                 if prev_tick != tick:
                     prev_tick = tick
-                    crzy_data["tick_data"].append(
-                        {"tick": tick,
-                        "book": get_trading_data(s,"CRZY")}
-                    )
-                    tame_data["tick_data"].append(
-                        {"tick": tick,
-                        "book": get_trading_data(s,"TAME")}
-                    )
-                    tender_data["tick_data"].append(
-                        {"tick": tick,
-                        "tenders": get_tenders(s)
-                        }
-                    )
+                    retriever.gather_data(tick, tickers,s)
                     # checks if we've finished the test, if we have we will increment the counter by 1
                     print(tick)
                 tick = get_tick(s)
                 status = get_status(s)
                 if tick == 300:
-                    crzy_data["tas"] = get_tas(s,"CRZY")
-                    crzy_data["history"] = get_history(s,"CRZY")
-                    tame_data["tas"] = get_tas(s,"TAME")
-                    tame_data["history"] = get_history(s,"TAME")
-                    payload = {
-                        "time": time,
-                        "crzy": crzy_data,
-                        "tame": tame_data,
-                        "tenders": tender_data
-                    }
-                    db.lt3.insert_one(payload)
+                    retriever.gather_data(tick, tickers,s)
                     counter += 1
                     time = datetime.datetime.today()
-                    
-                    crzy_data = {"tick_data": []}
-                    tame_data = {"tick_data": []}
-                    tender_data = {"tick_data": []}
+                    retriever = dr.retriever(time, 'algo_trader', test_name, db_endpoint)
                     print('Completed', counter, 'Full test')
                     #sleeps 1 seconds to ensure same tick isn't executed again
                     sleep(3)
@@ -146,13 +79,15 @@ def test_main(db):
 
 #environment variables
 test = True #back_test variable does various functions such as saving outputs and allows program to run in the background
-test_name = 'lt3'
+test_name = 'data_retriever_test'
 test_counter = 10
 API_KEY = {'X-API-Key': '33XT2ML9'}
 shutdown = False
-client = MongoClient('mongodb://127.0.0.1:27017')
-db = client.algo_comp
-serverStatusResult=db.command("serverStatus")
+db_endpoint = 'mongodb://127.0.0.1:27017'
+tickers = ["CRZY", "TAME"]
+# client = MongoClient('mongodb://127.0.0.1:27017')
+# db = client.algo_comp
+# serverStatusResult=db.command("serverStatus")
 
 
 
@@ -162,6 +97,6 @@ if __name__ == '__main__':
     counter = 0
     signal.signal(signal.SIGINT, signal_handler)
     if test == True:
-        test_main(db)
+        test_main()
     # else:
     #     main()

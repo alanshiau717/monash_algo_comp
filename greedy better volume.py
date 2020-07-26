@@ -4,6 +4,8 @@ import requests
 import pandas as pd 
 import os
 from time import sleep
+import api_calls
+import strategies.algo1.market_order as market_order
 
 
 # this class definition allows us to print error messages and stop the program when needed
@@ -125,14 +127,9 @@ def trade_handler(s,tick):
     if crzy_m_bid > crzy_a_ask:
         crzy_m_vol = agg_volume(crzy_m_book, crzy_m_bid, 'bids')
         crzy_a_vol = agg_volume(crzy_a_book, crzy_a_ask, 'asks')
-        # volume = min(crzy_m_vol, crzy_a_vol)
         volume = min(crzy_m_book['bids'][0]['quantity'], crzy_a_book['asks'][0]['quantity'])
         if volume > 10000:
             volume = 10000
-        else:
-            print(crzy_m_book)
-            print(crzy_a_book)
-        print(volume)
         crzy_a_params = {'ticker': 'CRZY_A', 'type': 'MARKET', 'quantity': volume, 'action': 'BUY'}
         crzy_m_params = {'ticker': 'CRZY_M', 'type': 'MARKET', 'quantity': volume, 'action': 'SELL'}
         s.post('http://localhost:9999/v1/orders', params=crzy_a_params)
@@ -140,28 +137,13 @@ def trade_handler(s,tick):
     if crzy_a_bid > crzy_m_ask:
         crzy_a_vol = agg_volume(crzy_a_book, crzy_a_bid, 'bids')
         crzy_m_vol = agg_volume(crzy_m_book, crzy_m_ask, 'asks')
-        # volume = min(crzy_a_vol, crzy_m_vol)
         volume = min(crzy_a_book['bids'][0]['quantity'], crzy_m_book['asks'][0]['quantity'])
         if volume > 10000:
             volume = 10000
-        else:
-            print(crzy_m_book)
-            print(crzy_a_book)
-        print(volume)
         crzy_a_params = {'ticker': 'CRZY_A', 'type': 'MARKET', 'quantity': volume, 'action': 'SELL'}
         crzy_m_params = {'ticker': 'CRZY_M', 'type': 'MARKET', 'quantity': volume, 'action': 'BUY'}
         s.post('http://localhost:9999/v1/orders', params=crzy_a_params)
         s.post('http://localhost:9999/v1/orders', params=crzy_m_params)
-    #gather data and put it into the data frame
-    trader_data = get_trader_data(s)
-    temp = [tick, trader_data['nlv'], crzy_a_book['bids'][0]['price'], agg_volume(crzy_a_book, crzy_a_bid, 'bids'), crzy_a_book['asks'][0]['price'],agg_volume(crzy_a_book, crzy_a_ask, 'asks'), crzy_m_book['bids'][0]['price'],agg_volume(crzy_m_book, crzy_m_bid, 'bids'), crzy_m_book['asks'][0]['price'],agg_volume(crzy_m_book, crzy_m_ask, 'asks')]
-    try:
-        temp = temp + parse_order(crzy_a_params, crzy_a_book)
-        temp = temp + parse_order(crzy_m_params, crzy_m_book)
-    except UnboundLocalError:
-        temp = temp + [0,0,0,0,0,0]
-    temp_series = pd.Series(temp, index = data.columns)
-    data = data.append(temp_series, ignore_index = True)
 
 
 
@@ -173,10 +155,8 @@ def trade_handler(s,tick):
 
 #this is the main we are using for testing
 def test_main():
-    global data
-    global agg
     counter = 0
-    prev_tick = -1
+    # prev_tick = -1
     with requests.Session() as s:
         s.headers.update(API_KEY)
         tick = get_tick(s)
@@ -185,11 +165,10 @@ def test_main():
             #checks if the trading platform is running, if it is we do the trades
             if status == "ACTIVE":
                 #this insures we only execute the trade_handler once a tick
-                if prev_tick != tick:
-                    trade_handler(s, tick)
-                    prev_tick = tick
-                    # checks if we've finished the test, if we have we will increment the counter by 1
-                    print(tick)
+                trade_handler(s, tick)
+                prev_tick = tick
+                # checks if we've finished the test, if we have we will increment the counter by 1
+                print(tick)
                 tick = get_tick(s)
                 status = get_status(s)
                 if tick == 300:
@@ -200,50 +179,18 @@ def test_main():
                     #updates tick and status which should be INACTIVE now
                     tick = get_tick(s)
                     status = get_status(s)
-                    print(tick)
-                    print(status)
-                    data = calc_profit(data)
-                    #writes to excel
-                    if os.path.isfile(test_name+'.xlsx'):
-                        with pd.ExcelWriter(test_name+'.xlsx', mode='a') as writer:  
-                            data.to_excel(writer, sheet_name=test_name+str(counter))
-                    else:
-                        data.to_excel(test_name+'.xlsx',
-                            sheet_name=test_name+str(counter))  
-                    #take some important aggregate data
-                    temp = {'Run': counter ,
-                        'Ending NLV': data.iloc[-1]['nlv'],
-                        'STDEV Price': data['crzy_a_bid_price'].std()
-                        }
-                    print(temp)
-                    agg = agg.append(temp, ignore_index = True)
-                    print(agg)
-                    #reinitizilze array
-                    data.drop(data.index, inplace=True)
-                    data.pop("Profit")
-                    data.pop('Expected Profit')
             #if trading platform becomes inactive
             else:            
                 tick = get_tick(s)
                 status = get_status(s)
                 sleep(1)
                 print("Trading Platform not active")
-        #once all tests have been run
-        temp = {'Run': 'Totals' ,
-                'Ending NLV': agg['Ending NLV'].mean(),
-                'STDEV Price': agg['STDEV Price'].mean()
-                }
-        agg = agg.append(temp, ignore_index = True)
-        with pd.ExcelWriter(test_name+'.xlsx', mode='a') as writer:  
-            agg.to_excel(writer, sheet_name='Results')
             
 
 #environment variables
 test = True #back_test variable does various functions such as saving outputs and allows program to run in the background
 test_name = 'Greedy worse volume strat'
 test_counter = 10
-data = pd.DataFrame(columns = ['tick','nlv', 'crzy_a_bid_price', 'crzy_a_bid_volume', 'crzy_a_ask_price', 'crzy_a_ask_volume', 'crzy_m_bid_price', 'crzy_m_bid_volume', 'crzy_m_ask_price', 'crzy_m_ask_volume', 'crzy_a_price', 'crzy_a_qty', 'crzy_a_action', 'crzy_m_price', 'crzy_m_qty', 'crzy_m_action']) #initialize dataframe used for storing all the data in a single session
-agg = pd.DataFrame(columns = ['Run', 'Ending NLV', 'STDEV Price'])
 
 if __name__ == '__main__':
     # register the custom signal handler for graceful shutdowns
@@ -251,5 +198,3 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)
     if test == True:
         test_main()
-    # else:
-    #     main()
