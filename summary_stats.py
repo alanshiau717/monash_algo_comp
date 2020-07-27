@@ -6,7 +6,7 @@ import numpy
 client = MongoClient('mongodb://127.0.0.1:27017')
 db = client['lt3']
 serverStatusResult=db.command("serverStatus")
-test_name = 'lookback 50 fixed'
+test_name = 'dynamic 120'
 summary_stat = pd.DataFrame(columns = ['Test Time', "NLV","NLV Stdev", "CRZY Price Stdev", "CRZY Average Volume", "TAME Price Stdev", "TAME Average Volume"])           
 for db_entry in db[test_name].find():
     temp = [db_entry['time']]

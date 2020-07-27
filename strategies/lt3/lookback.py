@@ -20,6 +20,8 @@ class vwap_lookback:
 
 
     def tick_handler(self, session, tick):
+        print('hit tick handler')
+        print('tick', tick)
         securities = api_calls.get_securities(session)
         for ticker in self.tickers:
             tas_data = api_calls.get_tas_param(session, ticker, self.lookback)

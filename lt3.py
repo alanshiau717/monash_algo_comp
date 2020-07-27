@@ -8,9 +8,7 @@ import os
 from time import sleep
 import utils.data_retriever as dr
 import datetime
-import strategies.lt3.basic_method as basic_method
-import strategies.lt3.lookback as lookback
-import strategies.lt3.dynamic_trading_method as dynamic
+import strategies.lt3.dynamic_120 as dynamic
 import api_calls
 
 # this class definition allows us to print error messages and stop the program when needed
@@ -79,7 +77,7 @@ def test_main():
 
 #environment variables
 test = True #back_test variable does various functions such as saving outputs and allows program to run in the background
-test_name = 'dynamic'
+test_name = 'dynamic 120'
 test_counter = 100
 API_KEY = {'X-API-Key': '33XT2ML9'}
 shutdown = False
