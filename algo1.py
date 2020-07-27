@@ -3,13 +3,13 @@ from pymongo import MongoClient
 # This is a python example algorithm using REST API for the RIT ALGO1 Case
 import signal
 import requests
-import pandas as pd 
 import os
 from time import sleep
-import utils.data_retriever as dr
+import utils.algo1_retriever as dr
 import datetime
 import api_calls
 import strategies.algo1.market_order as market_order
+import strategies.algo1.limit_order as limit_order
 
 # this class definition allows us to print error messages and stop the program when needed
 class ApiException(Exception):
@@ -33,32 +33,32 @@ def test_main():
         s.headers.update(API_KEY)
         tick = api_calls.get_tick(s)
         status = api_calls.get_status(s)
-        while status == "ACTIVE":
-            print('Waiting for test to complete')
-            status = api_calls.get_status(s)
-            sleep(1)
-            pass
+        # while status == "ACTIVE":
+        #     print('Waiting for test to complete')
+        #     status = api_calls.get_status(s)
+        #     sleep(1)
+        #     pass
         status = api_calls.get_status(s)
         print('Finished Waiting test to complete')
         while counter <= test_counter:
             #checks if the trading platform is running, if it is we do the trades
             if status == "ACTIVE":
-                market_order.trade_handler(s)
+                # market_order.trade_handler(s)
                 #this insures we only execute the trade_handler once a tick
                 if prev_tick != tick:
                     prev_tick = tick
                     retriever.gather_data(tick, tickers, s)
-                    market_order.trade_handler(s)
+                    limit_order.tick_handler(s, tick, tickers)
                     # checks if we've finished the test, if we have we will increment the counter by 1
                     print(tick)
                 tick = api_calls.get_tick(s)
                 status = api_calls.get_status(s)
-                if tick == 300:
+                if tick == 299:
                     retriever.gather_data(tick, tickers, s)
                     # market_order.trade_handler(s)
                     counter += 1
                     time = datetime.datetime.today()
-                    retriever = dr.retriever(time, 'lt3', test_name, db_endpoint)
+                    retriever = dr.retriever(time, algorithm, test_name, db_endpoint)
                     print('Completed', counter, 'Full test')
                     #sleeps 1 seconds to ensure same tick isn't executed again
                     sleep(3)
@@ -78,9 +78,9 @@ def test_main():
 #environment variables
 test = True #back_test variable does various functions such as saving outputs and allows program to run in the background
 algorithm = 'algo1'
-test_name = 'market_order'
+test_name = 'limit order low vol'
 test_counter = 100
-API_KEY = {'X-API-Key': '33XT2ML9'}
+API_KEY = {'X-API-Key': 'ZG1FQE8P'}
 shutdown = False
 db_endpoint = 'mongodb://127.0.0.1:27017'
 tickers = ["CRZY_A", "CRZY_M"]
@@ -90,6 +90,7 @@ tickers = ["CRZY_A", "CRZY_M"]
 
 if __name__ == '__main__':
     # register the custom signal handler for graceful shutdowns
+    print('hit')
     counter = 0
     signal.signal(signal.SIGINT, signal_handler)
     if test == True:

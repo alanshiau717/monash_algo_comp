@@ -1,6 +1,5 @@
 #this function should be a holistic solution to storing all trading related data
 from pymongo import MongoClient
-import pandas as pd
 import requests
 import datetime
 import api_calls
