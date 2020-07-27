@@ -7,7 +7,7 @@ import numpy
 client = MongoClient('mongodb://127.0.0.1:27017')
 db = client['algo1']
 serverStatusResult=db.command("serverStatus")
-test_name = 'market_order_low_vol'
+test_name = 'limit order low vol'
 summary_stat = pd.DataFrame(columns = ['Test Time', "NLV","NLV Stdev", "CRZY_A Price Stdev", "CRZY_A Average Volume", "CRZY_M Price Stdev", "CRZY_M Average Volume"])           
 for db_entry in db[test_name].find():
     temp = [db_entry['time']]

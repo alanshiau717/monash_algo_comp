@@ -18,7 +18,7 @@ class retriever:
         "tenders": {'tick_data': []}, 
         "trader": {"tick_data": []}
         }
-    
+
     def connect_db(self, endpoint):
         self.client = MongoClient(endpoint)
         self.db = self.client[self.db_name]

@@ -46,11 +46,11 @@ def test_main():
                 # market_order.trade_handler(s)
                 #this insures we only execute the trade_handler once a tick
                 if prev_tick != tick:
+                    print(tick)
                     prev_tick = tick
                     retriever.gather_data(tick, tickers, s)
                     limit_order.tick_handler(s, tick, tickers)
                     # checks if we've finished the test, if we have we will increment the counter by 1
-                    print(tick)
                 tick = api_calls.get_tick(s)
                 status = api_calls.get_status(s)
                 if tick == 299:
@@ -80,7 +80,7 @@ test = True #back_test variable does various functions such as saving outputs an
 algorithm = 'algo1'
 test_name = 'limit order low vol'
 test_counter = 100
-API_KEY = {'X-API-Key': 'ZG1FQE8P'}
+API_KEY = {'X-API-Key': '33XT2ML9'}
 shutdown = False
 db_endpoint = 'mongodb://127.0.0.1:27017'
 tickers = ["CRZY_A", "CRZY_M"]
