@@ -149,4 +149,5 @@ def is_filled(session,o_id):
         else:
             return True
     print(resp.json())
+    return False
     raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')

@@ -1,6 +1,5 @@
 #this function should be a holistic solution to storing all trading related data
 from pymongo import MongoClient
-import pandas as pd
 import requests
 import datetime
 import api_calls
@@ -17,7 +16,6 @@ class retriever:
         self.payload = {
         "time": self.date, 
         "tenders": {'tick_data': []}, 
-        "orders": {},
         "trader": {"tick_data": []}
         }
     
@@ -27,7 +25,7 @@ class retriever:
 
     #reason why we are passing a session instead of initing is because we already have a session
     def gather_data(self, tick, tickers, s):
-        if tick == 300:
+        if tick == 299:
             for ticker in tickers:
                 self.payload[ticker]['tas'] = api_calls.get_tas(s, ticker)
                 self.payload[ticker]['history'] = api_calls.get_history(s, ticker)
@@ -37,7 +35,6 @@ class retriever:
                     "nlv": api_calls.get_trader_data(s)['nlv']
                 }
             )
-            self.payload['orders'] = api_calls.get_all_orders(s)
             self.db_insert()
         else:
 
