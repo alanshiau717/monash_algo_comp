@@ -113,8 +113,8 @@ class trade_handler:
         print('Estimated Volatility',volatility)
         print('Maximum Volume', max_vol)
         print('Tick', tick)
-        if tick < 240:
-            time = 60
+        if tick < 180:
+            time = 120
         else:
             time = 300-tick
         temp_impact = 0.142*(volatility)*(volume/(max_vol*(time/300)))**(0.6)
@@ -169,8 +169,8 @@ class trade_handler:
         print('Estimated Volatility',volatility)
         print('Maximum Volume', max_vol)
         print('Tick', tick)
-        if tick < 240:
-            time = 60
+        if tick < 180:
+            time = 120
         else:
             time = 300-tick
         temp_impact = 0.142*(volatility)*(volume/(max_vol*(time/300)))**(0.6)
@@ -232,46 +232,6 @@ class trade_handler:
                     self.data[ticker]["time_to_sell"] -=1
             else:
                 pass
-        #then scalp any remaining volume of the same length of time
-        # prev_tick = tick 
-        # tick = api_calls.get_tick(session)
-        # ending_vols = {
-        #     "CRZY": 0,
-        #     "TAME": 0
-        # }
-        # original_vols = {
-        #     "CRZY": 0,
-        #     "TAME": 0
-        # }
-        # #initilize temp volums
-        # securities = api_calls.get_securities(session)
-        # for ticker in self.tickers:
-        #     for i in securities:
-        #         if i['ticker']==ticker:
-        #             original_vols[ticker]=i['position']
-        # while prev_tick == tick:
-        #     for ticker in self.tickers:
-        #         #make orders
-        #         if self.data[ticker]['current_stock']>0:
-        #             o_id = self.microtrade(ticker,"SELL",self.data[ticker]['bid'], session,self.data[ticker]['current_stock'])
-        #             if api_calls.is_filled(session,o_id) == False:
-        #                 api_calls.cancel_order(session,o_id)
-        #         elif self.data[ticker]['current_stock']<0:
-        #             o_id = self.microtrade(ticker,"BUY",self.data[ticker]['ask'], session,self.data[ticker]['current_stock'])
-        #             if api_calls.is_filled(session,o_id) == False:
-        #                 api_calls.cancel_order(session,o_id)
-        #     tick = api_calls.get_tick(session)
-        # #check volumes
-        # securities = api_calls.get_securities(session)
-        # for ticker in self.tickers:
-        #     for i in securities:
-        #         if i['ticker']==ticker:
-        #             ending_vols[ticker]=i['position']
-        #     if abs(ending_vols[ticker])!=0:
-        #         self.data[ticker]['time_to_sell'] = (abs(original_vols[ticker])//abs(ending_vols[ticker]))*self.data[ticker]['time_to_sell']
-        #     else:
-        #         self.data[ticker]['time_to_sell'] = 0
-            
 
     def microtrade(self, ticker, action, price, session,vol):
         book = api_calls.get_trading_data(session, ticker)
