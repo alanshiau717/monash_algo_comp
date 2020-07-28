@@ -33,11 +33,11 @@ def test_main():
         s.headers.update(API_KEY)
         tick = api_calls.get_tick(s)
         status = api_calls.get_status(s)
-        # while status == "ACTIVE":
-        #     print('Waiting for test to complete')
-        #     status = api_calls.get_status(s)
-        #     sleep(1)
-        #     pass
+        while status == "ACTIVE":
+            print('Waiting for test to complete')
+            status = api_calls.get_status(s)
+            sleep(1)
+            pass
         status = api_calls.get_status(s)
         print('Finished Waiting test to complete')
         while counter <= test_counter:
@@ -78,9 +78,9 @@ def test_main():
 #environment variables
 test = True #back_test variable does various functions such as saving outputs and allows program to run in the background
 algorithm = 'algo1'
-test_name = 'limit order low vol'
+test_name = 'limit order full vol'
 test_counter = 100
-API_KEY = {'X-API-Key': '33XT2ML9'}
+API_KEY = {'X-API-Key': 'ZG1FQE8P'}
 shutdown = False
 db_endpoint = 'mongodb://127.0.0.1:27017'
 tickers = ["CRZY_A", "CRZY_M"]
@@ -90,7 +90,7 @@ tickers = ["CRZY_A", "CRZY_M"]
 
 if __name__ == '__main__':
     # register the custom signal handler for graceful shutdowns
-    print('hit')
+    # print('hit')
     counter = 0
     signal.signal(signal.SIGINT, signal_handler)
     if test == True:
