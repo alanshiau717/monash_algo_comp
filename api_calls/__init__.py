@@ -94,13 +94,13 @@ def get_all_orders(session):
     return orders
 
 def accept_tender(session, id):
-    print(id)
+    # print(id)
     resp =session.post('http://localhost:9999/v1/tenders/'+str(id))
     if resp.ok:
-        print('tender success')
+        # print('tender success')
         return 200
-    print(resp.json())
-    print('tender off failed')
+    # print(resp.json())
+    # print('tender off failed')
     raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')
     
 def send_order(session, ticker, volume, o_type, action, price):
@@ -135,10 +135,10 @@ def get_limits(session):
 def cancel_order(session,o_id):
     resp = session.delete("http://localhost:9999/v1/orders/"+str(o_id))
     if resp.ok:
-        print('Successfully Cancled')
+        # print('Successfully Cancled')
         return 200
-    print('Order Not Yet Executed')
-    print(resp.json())
+    # print('Order Not Yet Executed')
+    # print(resp.json())
     return None
     # raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')
 
@@ -149,9 +149,9 @@ def is_filled(session,o_id):
         if details['status']=="OPEN":
             return False
         else:
-            print('order_filled')
+            # print('order_filled')
             return True
-    print(resp.json())
+    # print(resp.json())
     return False
     raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')
 
