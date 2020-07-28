@@ -17,7 +17,8 @@ class trade_handler:
                 'current_stock': 0,
                 'average_volume': 0,
                 'time_to_sell': 0,
-                'current_price': 0
+                'current_price': 0,
+                'tender_price': -1
             }
             if i =="TAME":
                 self.data[i]['std'] = 0.189412361
@@ -102,7 +103,7 @@ class trade_handler:
         total_after = self.data[tender['ticker']]['current_stock'] + stock_change
         print('Current Stock', curr_total)
         print('Total After tender', total_after)
-        if abs(curr_total)>=total_after: #this means theres a net decrease in stock
+        if abs(curr_total)>=abs(total_after): #this means theres a net decrease in stock
             return True
         else:
             delta = total_after - curr_total
@@ -144,6 +145,7 @@ class trade_handler:
             if self.limit_check(tender)== True:
                 api_calls.accept_tender(session, tender['tender_id'])
                 self.trade_limit[ticker] = True
+                self.data[ticker]['tender_price'] = price
                 if self.data[ticker]['current_stock']>0:
                     print("Stock Already Exists adding additional stock")
                     print("Previous Time to Sell", self.data[ticker]['time_to_sell'])
@@ -202,6 +204,7 @@ class trade_handler:
             if self.limit_check(tender)== True:
                 self.trade_limit[ticker] = True
                 api_calls.accept_tender(session, tender['tender_id'])
+                self.data[ticker]['tender_price'] = price
                 if self.data[ticker]['current_stock']<0:
                     print("Stock Already Exists adding additional stock")
                     print("Previous Time to Sell", self.data[ticker]['time_to_sell'])
@@ -239,44 +242,102 @@ class trade_handler:
     def unwind_handler(self, tick, session):
         print('hit unwind_handler')
         print(self.data)
+        ticker_price = {
+            'TAME': -1,
+            'CRZY': -1
+        }
         #first sell required amount to clear in required time
         for ticker in self.tickers:
+            book = api_calls.get_trading_data(session, ticker)
             if self.data[ticker]["time_to_sell"]!=0 and (self.trade_limit[ticker]==False):
                 amount_required = self.data[ticker]['current_stock']//self.data[ticker]["time_to_sell"]
                 print("Amount Required", amount_required)
                 if amount_required>0:
                     api_calls.send_order(session, ticker, abs(amount_required), "MARKET", "SELL", 0)
                     self.data[ticker]["time_to_sell"] -=1
+                    self.data[ticker]['current_stock'] -= amount_required
+                    ticker_price[ticker] = book['bids'][0]['price']
                 elif amount_required<0:
                     api_calls.send_order(session, ticker, abs(amount_required), "MARKET", "BUY", 0)
                     self.data[ticker]["time_to_sell"] -=1
+                    self.data[ticker]['current_stock'] -= amount_required
+                    ticker_price[ticker] = book['asks'][0]['price']
             else:
                 pass
+        for ticker in self.tickers:
+            if self.data[ticker]["time_to_sell"]!=0 and (self.trade_limit[ticker]==False):
+                curr_stock = self.data[ticker]['current_stock']
+                if curr_stock>0:
+                    amount = self.microtrade(ticker, "SELL", self.data[ticker]['tender_price'], session, curr_stock, ticker_price[ticker])
+                    if amount != None:
+                        print('SOLD additional', amount)
+                        print("prev time", self.data[ticker]['time_to_sell'])
+                        self.data[ticker]['time_to_sell'] = ((curr_stock - amount)/curr_stock)*self.data[ticker]['time_to_sell']
+                elif curr_stock<0:
+                    amount = self.microtrade(ticker, "BUY", self.data[ticker]['tender_price'], session, curr_stock, ticker_price[ticker])
+                    print('SOLD additional', amount)
+                    print("prev time", self.data[ticker]['time_to_sell'])
+                    if amount != None:
+                        print('SOLD additional', amount)
+                        print("prev time", self.data[ticker]['time_to_sell'])
+                        self.data[ticker]['time_to_sell'] = ((curr_stock - amount)/curr_stock)*self.data[ticker]['time_to_sell']
+            else:
+                pass
+    
+            
+        
+    
 
-    def microtrade(self, ticker, action, price, session,vol):
+    def microtrade(self, ticker, action, price, session,vol, prev_price):
         book = api_calls.get_trading_data(session, ticker)
         #if we want to sell, check is buying price has stayed same or gone higher
         quantity = 0
         if action == "SELL":
             if price >= book['bids'][0]['price']:
+                print('additional scalp')
                 bid_price = book['bids'][0]['price']
                 for i in book['bids']:
                     if i['price'] == bid_price:
                         quantity += (i['quantity'] - i['quantity_filled'])
-                if quantity >=25000:
-                    quantity = 25000
-                resp = api_calls.send_order(session, ticker, min(quantity,abs(vol)), "LIMIT", "SELL", bid_price)
-                if resp != -1:
-                    return resp['order_id']
+                if ticker == "TAME":
+                    if quantity >=10000:
+                        quantity = 10000
+                elif ticker == "CRZY":
+                    if quantity >=25000:
+                        quantity = 25000
+                o_id = api_calls.send_order(session, ticker, min(quantity,abs(vol)), "LIMIT", "SELL", bid_price)['order_id']
+                order_exist = False
+                while (order_exist == False):
+                    order_exist = api_calls.order_exists(session, o_id)
+                if api_calls.is_filled(session, o_id):
+                    return min(quantity,abs(vol))
+                else:
+                    api_calls.cancel_order(session, o_id)
+                    return 0
+                
+                
+
+
         elif action == "BUY":
             if price <= book['asks'][0]['price']:
+                print('additional scalp')
                 ask_price = book['asks'][0]['price']
                 for i in book['asks']:
                     if i['price'] == ask_price:
                         quantity = i['quantity'] - i['quantity_filled']
-                    if quantity >=25000:
-                        quantity = 25000
-                resp = api_calls.send_order(session, ticker, min(quantity,abs(vol)), "LIMIT", "BUY", ask_price)
-                if resp != -1:
-                    return resp['order_id']
-
+                    if ticker == "TAME":
+                        if quantity >=10000:
+                            quantity = 10000
+                    elif ticker == "CRZY":
+                        if quantity >=25000:
+                            quantity = 25000
+                o_id = api_calls.send_order(session, ticker, min(quantity,abs(vol)), "LIMIT", "BUY", ask_price)
+                order_exist = False
+                while (order_exist == False):
+                    order_exist = api_calls.order_exists(session, o_id)
+                if api_calls.is_filled(session, o_id):
+                    return min(quantity,abs(vol))
+                else:
+                    api_calls.cancel_order(session, o_id)
+                    return 0
+        
