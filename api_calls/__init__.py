@@ -101,7 +101,8 @@ def accept_tender(session, id):
         return 200
     print(resp.json())
     print('tender off failed')
-    raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')
+    return None
+    # raise ApiException('The API key provided in this Python code must match that in the RIT client (please refer to the API hyperlink in the client toolbar and/or the RIT – User Guide – REST API Documentation.pdf)')
     
 def send_order(session, ticker, volume, o_type, action, price):
     if o_type == 'MARKET':
